@@ -1,57 +1,58 @@
+import jwt from "jsonwebtoken";
+import { errorMessages, successMessages } from "../constants/message.js";
 import User from "../models/User.js";
-import { registerSchema } from "../validations/auth.js";
-import bcryptjs from "bcryptjs";
+import { comparePassword, hashPassword } from "../utils/hashPassword.js";
+import { JWT_SECRET } from "../utils/env.js";
 
-export const register = async (req, res) => {
+
+export const register = async (req, res, next) => {
   try {
-    const { email, password } = req.body
+    const { email, password } = req.body;
 
-    const { error } = registerSchema.validate(req.body, { abortEarly: false })
-
-    if (error) {
-      const errors = error.details.map(err => err.message)
-      return res.status(400).json({
-        message: error
-      })
-    }
-
-
-    //  B2: Kiem tra email da ton tai chua?
-    const checkEmail = await User.findOne({ email });
-
+    const checkEmail = await User.findOne({ email: email });
     if (checkEmail) {
-      return res.status(400).json({
-        message: "Email da ton tai!"
-      });
+      return res.status(400).json({ message: errorMessages.EMAIL_EXIST });
     }
 
-    // B3: Ma hoa mat khau
+    const hashPass = await hashPassword(password);
 
-    const salt = await bcryptjs.genSalt(10);
-    const hashPassword = await bcryptjs.hash(password, salt);
-
-    // B4: Tao user moi
-
-    const user = await User.create({ ...req.body, password: hashPassword });
+    const user = await User.create({ ...req.body, password: hashPass });
     user.password = undefined;
+
     return res.status(201).json({
-      message: "Dang ky thanh cong!",
+      message: successMessages.REGISTER_SUCCESS,
       user,
     });
-
-    
   } catch (error) {
-    return res.status(500).json({
-      name: error.name,
-      message: error.message,
-    });
+    next(error);
   }
 };
 
-export const lognin = async (req, res) => {
+export const login = async (req, res, next) => {
   try {
+    const { email, password } = req.body;
 
+
+    const userExist = await User.findOne({ email });
+    if (!userExist) {
+      return res.status(400).json({ message: errorMessages.EMAIL_NOT_FOUND });
+    }
+
+    if (!(await comparePassword(password, userExist.password))) {
+      return res.status(400).json({ message: errorMessages.INVALID_PASSWORD });
+    }
+
+    const token = jwt.sign({ id: userExist._id }, JWT_SECRET, {
+      expiresIn: "1d",
+    });
+
+    userExist.password = undefined;
+    return res.status(201).json({
+      message: successMessages.LOGIN_SUCCESS,
+      token,
+      user: userExist,
+    });
   } catch (error) {
-
+    next(error);
   }
 };

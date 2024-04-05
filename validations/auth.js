@@ -1,16 +1,19 @@
-import Joi from "joi";
+import vine from "@vinejs/vine";
 
-export const registerSchema = Joi.object({
-  email: Joi.string().required().email(),
-  password: Joi.string().min(6).required(),
-  username: Joi.string().min(6),
-  phoneNumber: Joi.string().min(10).max(11),
-  avatar: Joi.string(),
-  address: Joi.string(),
-})
+const registerSchema = vine.object({
+  email: vine.string().email(),
+  password: vine.string().minLength(6),
+  username: vine.string().minLength(3).maxLength(64),
+phoneNumber: vine.string().minLength(10).maxLength(11),
+  avatar: vine.string(),
+  address: vine.string()
+});
 
-export const logninSchema = Joi.object({
-  email: Joi.string().required().email(),
-  password: Joi.string().min(6).required(),
-})
+export const validatorRegister = vine.compile(registerSchema);
 
+const loginSchema = vine.object({
+  email: vine.string().email(),
+  password: vine.string().minLength(6),
+});
+
+export const validatorLogin = vine.compile(loginSchema);

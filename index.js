@@ -1,20 +1,20 @@
 import express from "express";
-import router from "./routes/index.js";
-import mongoose from "mongoose";
 import cors from "cors";
+import { router } from "./routes/index.js";
+import { errorHandler, errorHandlerNotFound } from "./utils/erroHandler.js";
+import connect from "./utils/connect.js";
+import { PORT, URI_DB } from "./utils/env.js";
 
-const PORT = 8000;
 const app = express();
-
 app.use(cors());
 app.use(express.json());
 
-mongoose.connect("mongodb://localhost:27017/nodejs").then(() => {
-  console.log("Connected to MongoDB!");
-});
+connect(URI_DB);
 
-app.use("/api", router);
+router(app)
 
-app.listen(PORT, () => {
-  console.log(`Server is running on http://localhost:${PORT}`);
+app.use(errorHandlerNotFound, errorHandler);
+
+app.listen(PORT || 8000, () => {
+  console.log(`Server is running successfully ${PORT} ! `);
 });
